@@ -1,11 +1,7 @@
 # Justification
-@ -1,36 +1,213 @@
-# BloodForge Web
 
-BloodForge 官网和玩家中心。默认入口是 `index.html` 玩家中心，服务器信息在 `server.html`，公开内容无需登录即可查看。
 BloodForge Web is the public website and player account center for the BloodForge Minecraft Java Edition server.
 
-## 启动方式
 The site provides public server information, class descriptions, game mode documentation, and a logged-in player center for game data, point balance, recharge orders, and Minecraft profile binding.
 
 ## Project Purpose
@@ -24,25 +20,18 @@ The Microsoft login is used only to prove that the logged-in website user owns t
 
 ## Install And Run
 
-1. 安装依赖：
 ```bash
 npm install
 copy .env.example .env
 npm run dev
 ```
 
-2. 复制配置文件并填写 MySQL、SMTP 和 Session 信息：
-```bash
-copy .env.example .env
 Default local URL:
 
 ```text
 http://localhost:3000
 ```
 
-3. 启动网站：
-```bash
-npm run dev
 ## Database Tables
 
 The backend initializes the website database automatically on startup.
@@ -80,7 +69,6 @@ uuid
 data_value
 ```
 
-默认访问地址是 `http://localhost:3000`。
 Game data is queried by the UUID of the currently selected Minecraft profile.
 
 ## Microsoft And Minecraft Profile Verification
@@ -93,10 +81,8 @@ The application verifies ownership by letting the user sign in with Microsoft an
 
 ## Microsoft Verification Flow
 
-## 数据库
 BloodForge Web uses Microsoft OAuth Device Code Flow, similar to common Minecraft launchers.
 
-后端启动时会自动创建数据库和表结构，不需要手动执行 `schema.sql`。如果部署环境的数据库账号没有建库权限，请先手动创建 `.env` 里的 `DB_NAME` 数据库，网站仍会自动创建缺失的数据表。
 Flow:
 
 1. The user logs in to BloodForge Web.
@@ -129,10 +115,8 @@ BloodForge Web
 BloodForge Web is the account center for a private Minecraft Java Edition server named BloodForge. The application uses Microsoft authentication only to verify that a website user owns the Minecraft Java Edition profile they want to bind to their BloodForge website account. This prevents impersonation of premium Minecraft player names.
 ```
 
-`players` 表保存玩家登录信息、邮箱和展示数据，`email_verification_codes` 表保存注册验证码记录，`recharge_orders` 表保存玩家提交的充值订单，`sessions` 表保存登录会话。
 ### Why Minecraft Services Access Is Required
 
-## 游戏数据
 ```text
 After the player signs in with Microsoft, the server exchanges the Microsoft token through Xbox Live and XSTS, then calls Minecraft Services to retrieve the authenticated Minecraft Java Edition profile. BloodForge Web only needs the Minecraft profile name and UUID to bind the player identity to the website account. The application does not access multiplayer services, does not modify the Microsoft account, and does not store Microsoft access tokens after the binding flow finishes.
 ```
@@ -223,10 +207,7 @@ UUID mode:
 PREMIUM_SERVER_UUID_MODE=offline
 ```
 
-网站数据库只保存邮箱账号、玩家名绑定、UUID、验证码、会话、点券和充值订单。玩家中心里的金币、经验、评分、击杀、死亡、胜场等游戏数据会分别从 `.env` 里的 `DUEL_DB_*`、`ROUND_DB_*`、`FUN_DB_*` 指向的数据库读取。
 Use `offline` if the Minecraft server stores data using offline UUIDs.
 
-注册只需要邮箱验证码和密码。登录后玩家可以在玩家中心绑定 Minecraft 玩家名：离线账号会按 Java 版 `OfflinePlayer:<name>` 规则生成 UUID，正版账号会通过 Mojang/Microsoft 的玩家资料接口查询 UUID。
 Use `mojang` if the Minecraft server stores data using official Mojang UUIDs.
 
-三种模式可以使用不同数据库、不同表、不同字段名。比如单挑改 `DUEL_PLAYER_TABLE` 和 `DUEL_PLAYER_*_COLUMN`，回合制改 `ROUND_PLAYER_*`，娱乐模式改 `FUN_PLAYER_*`。默认按 UUID 查询，如果某种模式仍用玩家名查询，把该模式的 `*_PLAYER_LOOKUP_FIELD` 改成 `player_name`，并把 `*_PLAYER_LOOKUP_COLUMN` 改成对应数据库里的玩家名字段。
