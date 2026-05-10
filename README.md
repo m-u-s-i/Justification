@@ -1,213 +1,127 @@
-# Justification
 
-BloodForge Web is the public website and player account center for the BloodForge Minecraft Java Edition server.
+# BloodForge Web - Microsoft App Verification Information
 
-The site provides public server information, class descriptions, game mode documentation, and a logged-in player center for game data, point balance, recharge orders, and Minecraft profile binding.
+This page is provided for Microsoft and Minecraft Services application review.
 
-## Project Purpose
+## Application Summary
 
-BloodForge Web is used by BloodForge server players to:
+BloodForge Web is the account center for BloodForge, a private Minecraft Java Edition multiplayer server.
 
-- View public server information.
-- View class and game mode documentation.
-- Register a website account with email verification.
-- Log in to the player center.
-- View game data from the Minecraft server databases.
-- Bind Minecraft player profiles to a BloodForge website account.
-- Verify ownership of premium Minecraft Java Edition profiles through Microsoft, Xbox Live, XSTS, and Minecraft Services.
+The application uses Microsoft authentication only to verify ownership of a Minecraft Java Edition profile before allowing a player to bind that Minecraft profile to their BloodForge website account.
 
-The Microsoft login is used only to prove that the logged-in website user owns the Minecraft Java Edition profile they want to bind. This prevents users from manually entering and claiming another premium player's Minecraft name.
+## Why Microsoft Authentication Is Needed
 
-## Install And Run
+BloodForge Web allows players to bind a Minecraft player name to their website account.
 
-```bash
-npm install
-copy .env.example .env
-npm run dev
-```
+For offline-mode players, the server can generate an offline UUID from the player name.
 
-Default local URL:
+For premium Minecraft Java Edition players, a public Mojang profile lookup can show that a name exists, but it cannot prove that the current website user owns that profile.
 
-```text
-http://localhost:3000
-```
+Therefore, Microsoft authentication is required so that BloodForge Web can verify that the user signing in is the real owner of the Minecraft Java Edition profile being bound.
 
-## Database Tables
+This prevents impersonation of premium Minecraft player names.
 
-The backend initializes the website database automatically on startup.
+## User Flow
 
-Main tables:
-
-- `players`: website account table. Stores email, password hash, email verification time, point balance, point spent, point recharged, and timestamps.
-- `player_profiles`: Minecraft profile binding table. Stores Minecraft name, server UUID, raw UUID, official Mojang UUID, account type, server UUID mode, and the current selected profile flag.
-- `email_verification_codes`: email verification code records.
-- `recharge_orders`: player recharge order records.
-- `sessions`: website login sessions.
-
-One website account can bind up to two Minecraft player profiles.
-
-## Game Data
-
-BloodForge Web does not store Minecraft game statistics in the website database.
-
-The player center reads game data from external Minecraft server databases configured through environment variables:
-
-- `DUEL_DB_*`
-- `ROUND_DB_*`
-- `FUN_DB_*`
-
-Round mode and fun mode support the BloodForgeDataStored plugin schema:
-
-```text
-data_<data_key>
-```
-
-Each data table contains:
-
-```text
-uuid
-data_value
-```
-
-Game data is queried by the UUID of the currently selected Minecraft profile.
-
-## Microsoft And Minecraft Profile Verification
-
-BloodForge Web uses Microsoft authentication to verify premium Minecraft Java Edition ownership.
-
-This is required because public Mojang profile lookup can confirm that a Minecraft name exists, but it cannot prove that the current website user owns that Minecraft account.
-
-The application verifies ownership by letting the user sign in with Microsoft and then retrieving the authenticated Minecraft Java Edition profile from Minecraft Services.
-
-## Microsoft Verification Flow
-
-BloodForge Web uses Microsoft OAuth Device Code Flow, similar to common Minecraft launchers.
-
-Flow:
-
-1. The user logs in to BloodForge Web.
+1. The user logs in to their BloodForge Web account.
 2. The user chooses to bind a premium Minecraft account.
-3. BloodForge Web requests a Microsoft device code.
-4. BloodForge Web displays the user code and Microsoft verification URL.
-5. The user opens the Microsoft verification page, enters the code, and signs in.
-6. BloodForge Web polls the Microsoft token endpoint until the user finishes verification.
-7. BloodForge Web exchanges the Microsoft token with Xbox Live.
-8. BloodForge Web exchanges the Xbox Live token with XSTS.
-9. BloodForge Web calls Minecraft Services `login_with_xbox`.
-10. BloodForge Web calls Minecraft Services `minecraft/profile`.
-11. If a Minecraft Java Edition profile is returned, BloodForge Web binds the returned Minecraft name and UUID to the user's website account.
+3. BloodForge Web starts Microsoft OAuth Device Code Flow.
+4. The user opens the Microsoft verification page and signs in with their Microsoft account.
+5. BloodForge Web receives a Microsoft access token after the user completes verification.
+6. BloodForge Web exchanges the Microsoft token through Xbox Live and XSTS.
+7. BloodForge Web calls Minecraft Services to retrieve the authenticated Minecraft Java Edition profile.
+8. If Minecraft Services returns a Java Edition profile, BloodForge Web binds the returned Minecraft name and UUID to the user's BloodForge account.
 
-Tokens are used only during the verification request. Microsoft access tokens, Xbox tokens, and XSTS tokens are not persisted.
+## Minecraft Services Usage
 
-## AppID Review Text
+BloodForge Web uses Minecraft Services only for account ownership verification.
 
-The following text can be used when submitting the Azure AppID for Minecraft Services access review.
+The application needs to retrieve:
 
-### Application Name
+- Minecraft Java Edition profile name
+- Minecraft UUID
 
-```text
-BloodForge Web
-```
+The application does not:
 
-### Application Purpose
+- Modify the user's Microsoft account
+- Modify the user's Minecraft account
+- Access multiplayer sessions
+- Access Realms data
+- Store Microsoft access tokens
+- Store Xbox Live tokens
+- Store XSTS tokens
 
-```text
-BloodForge Web is the account center for a private Minecraft Java Edition server named BloodForge. The application uses Microsoft authentication only to verify that a website user owns the Minecraft Java Edition profile they want to bind to their BloodForge website account. This prevents impersonation of premium Minecraft player names.
-```
+Tokens are used only during the verification request and are discarded after the binding flow completes.
 
-### Why Minecraft Services Access Is Required
+## Data Stored By BloodForge Web
 
-```text
-After the player signs in with Microsoft, the server exchanges the Microsoft token through Xbox Live and XSTS, then calls Minecraft Services to retrieve the authenticated Minecraft Java Edition profile. BloodForge Web only needs the Minecraft profile name and UUID to bind the player identity to the website account. The application does not access multiplayer services, does not modify the Microsoft account, and does not store Microsoft access tokens after the binding flow finishes.
-```
+BloodForge Web stores only the data required for website login and Minecraft profile binding:
 
-### Data Stored
+- Website account email
+- Password hash
+- Email verification state
+- Minecraft profile name
+- Minecraft UUID
+- Binding metadata
+- Player point balance and recharge order records
 
-```text
-BloodForge Web stores the website account email, password hash, Minecraft profile name, Minecraft UUID, account type, binding metadata, point balance, and recharge order records. Microsoft access tokens, Xbox tokens, and XSTS tokens are used only during the verification request and are not persisted.
-```
+Microsoft OAuth tokens are not persisted.
 
-### User-Facing Flow
+## Requested Permission Purpose
 
-```text
-The user logs into BloodForge Web, chooses "Bind premium Minecraft account", receives a Microsoft device code, opens the Microsoft verification page, signs in, and grants access. After Minecraft Services returns the authenticated Minecraft Java Edition profile, the website binds the returned profile name and UUID to the user's BloodForge account.
-```
+The requested Microsoft/Minecraft authentication access is used only to confirm that a BloodForge Web user owns the Minecraft Java Edition profile they want to bind.
 
-### Security And Privacy
+The application does not use Microsoft authentication for advertising, tracking, analytics, account resale, automation, or any unrelated purpose.
 
-```text
-BloodForge Web uses Microsoft authentication only for identity verification. It does not store Microsoft account passwords or OAuth tokens. It stores only the Minecraft profile name and UUID returned by Minecraft Services, plus website account data required for login and server account management.
-```
+## OAuth Flow
 
-## Azure App Registration Requirements
-
-For Device Code Flow, the Azure application must allow public client flows.
-
-Required settings:
-
-- Supported account types: personal Microsoft accounts.
-- Platform: Mobile and desktop applications.
-- Redirect URI: `https://login.microsoftonline.com/common/oauth2/nativeclient`
-- Allow public client flows: `Yes`
-
-Legacy authorization-code fallback redirect URI for local development:
-
-```text
-http://localhost:3000/api/player-profile/microsoft/callback
-```
-
-Production redirect URI example:
-
-```text
-https://your-domain.example/api/player-profile/microsoft/callback
-```
-
-Device code endpoint:
+BloodForge Web primarily uses Microsoft OAuth Device Code Flow:
 
 ```text
 https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode
 ```
 
-Scopes:
+Requested scopes:
 
 ```text
 XboxLive.signin offline_access
 ```
 
-If Minecraft Services returns:
+The application may also keep an authorization-code callback as a fallback:
 
 ```text
-Invalid app registration
+https://your-domain.example/api/player-profile/microsoft/callback
 ```
 
-then the Azure AppID has not been accepted for Minecraft Services access. Submit the AppID using the Minecraft App Registration information form:
+For local development only:
 
 ```text
-https://aka.ms/AppRegInfo
+http://localhost:3000/api/player-profile/microsoft/callback
 ```
 
-## Environment Variables
+## Contact / Brand
 
-Microsoft settings:
+Application name:
 
-```env
-MICROSOFT_CLIENT_ID=
-MICROSOFT_CLIENT_SECRET=
-MICROSOFT_REDIRECT_URI=http://localhost:3000/api/player-profile/microsoft/callback
-MICROSOFT_SCOPE=XboxLive.signin offline_access
-MICROSOFT_PROMPT=login
-MICROSOFT_AUTHORIZE_URL=https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize
-MICROSOFT_TOKEN_URL=https://login.microsoftonline.com/consumers/oauth2/v2.0/token
-MICROSOFT_DEVICE_CODE_URL=https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode
+```text
+BloodForge Web
 ```
 
-UUID mode:
+Server name:
 
-```env
-PREMIUM_SERVER_UUID_MODE=offline
+```text
+BloodForge
 ```
 
-Use `offline` if the Minecraft server stores data using offline UUIDs.
+Application type:
 
-Use `mojang` if the Minecraft server stores data using official Mojang UUIDs.
+```text
+Minecraft Java Edition server website and player account center
+```
+
+Primary purpose:
+
+```text
+Verify Minecraft Java Edition profile ownership before binding a Minecraft profile to a BloodForge website account.
+```
 
